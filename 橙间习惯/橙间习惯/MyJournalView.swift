@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MyJournalView: View {
     @EnvironmentObject private var journalStore: JournalStore
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var displayedMonth: Date = Date()
     @State private var selectedDate: Date = Date()
@@ -20,6 +21,10 @@ struct MyJournalView: View {
         formatter.dateFormat = "yyyy年M月"
         return formatter
     }()
+
+    private var palette: ThemePalette {
+        ThemePalette(colorScheme: colorScheme)
+    }
 
     private let detailDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -42,12 +47,8 @@ struct MyJournalView: View {
                 .padding(.vertical, 28)
             }
             .background(
-                LinearGradient(
-                    colors: [Color(hex: "FFECD1"), Color(hex: "FFC2E1")],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                palette.background
+                    .ignoresSafeArea()
             )
             .navigationTitle("我的")
             .navigationBarTitleDisplayMode(.inline)
@@ -64,25 +65,25 @@ struct MyJournalView: View {
             Button(action: { shiftMonth(by: -1) }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color(hex: "4C2A1C"))
+                    .foregroundColor(palette.primaryInk)
                     .padding(8)
-                    .background(Color.white.opacity(0.6), in: Circle())
+                    .background(palette.toolbarButtonBackground, in: Circle())
             }
 
             Spacer()
 
             Text(monthFormatter.string(from: displayedMonth))
                 .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundStyle(Color(hex: "4C2A1C"))
+                .foregroundStyle(palette.primaryInk)
 
             Spacer()
 
             Button(action: { shiftMonth(by: 1) }) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color(hex: "4C2A1C"))
+                    .foregroundColor(palette.primaryInk)
                     .padding(8)
-                    .background(Color.white.opacity(0.6), in: Circle())
+                    .background(palette.toolbarButtonBackground, in: Circle())
             }
         }
     }
@@ -93,7 +94,7 @@ struct MyJournalView: View {
             ForEach(symbols, id: \.self) { symbol in
                 Text(symbol)
                     .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundStyle(Color(hex: "6E4733").opacity(0.8))
+                    .foregroundStyle(palette.secondaryInk.opacity(0.75))
                     .frame(maxWidth: .infinity)
             }
         }
@@ -111,7 +112,7 @@ struct MyJournalView: View {
     private func dayCell(for day: CalendarDay) -> some View {
         let isSelected = calendar.isDate(day.date, inSameDayAs: selectedDate)
         let hasEntry = journalStore.entry(for: day.date) != nil
-        let textColor: Color = day.isWithinDisplayedMonth ? Color(hex: "4C2A1C") : Color(hex: "6E4733").opacity(0.3)
+        let textColor = palette.calendarDayTextColor(isWithinMonth: day.isWithinDisplayedMonth)
 
         return Button(action: {
             selectedDate = calendar.startOfDay(for: day.date)
@@ -122,7 +123,7 @@ struct MyJournalView: View {
                     .foregroundStyle(isSelected ? Color.white : textColor)
 
                 Circle()
-                    .fill(Color(hex: "FF8A5B"))
+                    .fill(palette.calendarAccent)
                     .frame(width: 6, height: 6)
                     .opacity(hasEntry ? 1 : 0)
             }
@@ -132,21 +133,15 @@ struct MyJournalView: View {
                 Group {
                     if isSelected {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color(hex: "FF8866"), Color(hex: "FFA552"), Color(hex: "FFC95C")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .shadow(color: Color(hex: "FF8A5B").opacity(0.35), radius: 10, x: 0, y: 6)
+                            .fill(palette.calendarSelectedFill)
+                            .shadow(color: palette.calendarSelectedShadow, radius: 10, x: 0, y: 6)
                     } else if hasEntry {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color.white.opacity(0.65))
-                            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
+                            .fill(palette.cardFill(isActive: true))
+                            .shadow(color: palette.calendarCellShadow, radius: 8, x: 0, y: 4)
                     } else {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(day.isWithinDisplayedMonth ? Color.white.opacity(0.3) : Color.white.opacity(0.15))
+                            .fill(day.isWithinDisplayedMonth ? palette.calendarCellFill : palette.calendarCellInactiveFill)
                     }
                 }
             )
@@ -160,72 +155,88 @@ struct MyJournalView: View {
         return VStack(alignment: .leading, spacing: 18) {
             Text(detailDateFormatter.string(from: selectedDate))
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color(hex: "4C2A1C"))
+                .foregroundStyle(palette.primaryInk)
+                .padding(.bottom, LayoutSpacing.titleBottom)
 
             if let entry = entry {
-                VStack(spacing: 18) {
-                    ForEach(prompts, id: \.id) { prompt in
-                        let raw = entry.responses[prompt.id]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                        let display = raw.isEmpty ? "当日未留下文字。" : raw
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text(prompt.title)
-                                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                .foregroundStyle(Color(hex: "4C2A1C"))
-                            Text(display)
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
-                            .foregroundStyle(Color(hex: "6E4733").opacity(0.82))
-                            .lineSpacing(5)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(20)
-                        .background(
-                            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                .fill(Color.white.opacity(0.9))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                .stroke(Color.white.opacity(0.55), lineWidth: 1)
-                        )
-                    }
-                }
+                entryDetailContent(for: entry)
             } else {
-                VStack(spacing: 16) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 34, weight: .medium))
-                        .foregroundColor(Color(hex: "FF8A5B"))
-                    Text("暂无日志")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color(hex: "4C2A1C"))
-                    Text("点击带有小圆点的日期，回看那一天的晨间仪式文字。")
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color(hex: "6E4733").opacity(0.75))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(24)
-                .background(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(Color.white.opacity(0.82))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.white.opacity(0.55), lineWidth: 1)
-                )
+                emptyJournalView()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(22)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.white.opacity(0.88))
+                .fill(palette.detailPanelFill)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.55), lineWidth: 1)
+                .stroke(palette.detailPanelStroke, lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.08), radius: 18, x: 0, y: 10)
+        .shadow(color: palette.entryShadow, radius: 18, x: 0, y: 10)
+    }
+
+    @ViewBuilder
+    private func entryDetailContent(for entry: JournalEntry) -> some View {
+        VStack(spacing: 18) {
+            ForEach(prompts, id: \.id) { prompt in
+                let raw = entry.responses[prompt.id]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let display = raw.isEmpty ? "当日未留下文字。" : raw
+
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(prompt.title)
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .foregroundStyle(palette.primaryInk)
+                        .padding(.bottom, LayoutSpacing.titleBottom)
+
+                    Text(Typography.bodyAttributed(display))
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(palette.secondaryInk)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(palette.detailCardFill)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(palette.detailCardStroke, lineWidth: 1)
+                )
+            }
+        }
+    }
+
+    private func emptyJournalView() -> some View {
+        VStack(spacing: 20) {
+            Image("JournalEmpty")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 280)
+                .cornerRadius(28)
+                .shadow(color: palette.entryShadow, radius: 14, x: 0, y: 10)
+
+            Text("暂无日志")
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .foregroundStyle(palette.primaryInk)
+
+            Text(Typography.bodyAttributed("别担心，每一天都是新的开始。从今天起，让我们一起记录美好吧！"))
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(palette.tertiaryInk)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(palette.emptyCardFill)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(palette.detailCardStroke, lineWidth: 1)
+        )
     }
 
     private func shiftMonth(by value: Int) {

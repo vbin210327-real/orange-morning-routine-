@@ -5,12 +5,12 @@ struct MainView: View {
         TabView {
             ContentView()
                 .tabItem {
-                    Label("仪式", systemImage: "sun.and.horizon")
+                    Label("晨光", systemImage: "sun.and.horizon")
                 }
 
             MyJournalView()
                 .tabItem {
-                    Label("我的", systemImage: "person.crop.circle")
+                    Label("时光", systemImage: "person.crop.circle")
                 }
         }
     }

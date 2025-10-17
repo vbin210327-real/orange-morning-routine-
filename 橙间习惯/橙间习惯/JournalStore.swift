@@ -51,6 +51,14 @@ final class JournalStore: ObservableObject {
         entries.sorted { $0.date > $1.date }
     }
 
+    #if DEBUG
+    func deleteEntry(for date: Date) {
+        let day = Calendar.current.startOfDay(for: date)
+        entries.removeAll { Calendar.current.isDate($0.date, inSameDayAs: day) }
+        persist()
+    }
+    #endif
+
     private func load() {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
         do {
