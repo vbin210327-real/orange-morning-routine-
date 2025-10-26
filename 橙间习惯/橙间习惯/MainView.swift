@@ -1,18 +1,38 @@
 import SwiftUI
 
+private enum MainTab: Int {
+    case morning
+    case journal
+}
+
 struct MainView: View {
+    @State private var selectedTab: MainTab = .morning
+
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             ContentView()
                 .tabItem {
-                    Label("晨光", systemImage: "sun.and.horizon")
+                    Label {
+                        Text("晨光")
+                    } icon: {
+                        Image(systemName: "sun.and.horizon")
+                            .symbolVariant(selectedTab == .morning ? .fill : .none)
+                    }
                 }
+                .tag(MainTab.morning)
 
             MyJournalView()
                 .tabItem {
-                    Label("时光", systemImage: "person.crop.circle")
+                    Label {
+                        Text("时光")
+                    } icon: {
+                        Image(systemName: "person.crop.circle")
+                            .symbolVariant(selectedTab == .journal ? .fill : .none)
+                    }
                 }
+                .tag(MainTab.journal)
         }
+        .tint(.black)
     }
 }
 
