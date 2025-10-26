@@ -44,14 +44,14 @@ struct MyJournalView: View {
                     detailSection
                 }
                 .padding(.horizontal, 20)
-                .padding(.vertical, 28)
+                .padding(.top, 16)
+                .padding(.bottom, 28)
             }
             .background(
                 palette.background
                     .ignoresSafeArea()
             )
-            .navigationTitle("我的")
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             .onAppear {
                 let today = calendar.startOfDay(for: Date())
                 displayedMonth = calendar.startOfMonth(for: today)
