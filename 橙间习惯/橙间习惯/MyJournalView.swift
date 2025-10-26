@@ -209,13 +209,11 @@ struct MyJournalView: View {
     }
 
     private func emptyJournalView() -> some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 18) {
             Image("JournalEmpty")
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: 280)
-                .cornerRadius(28)
-                .shadow(color: palette.entryShadow, radius: 14, x: 0, y: 10)
+                .frame(width: 160, height: 160)
 
             Text("暂无日志")
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
